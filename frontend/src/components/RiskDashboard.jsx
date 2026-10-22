@@ -69,13 +69,30 @@ export default function RiskDashboard({ predictionResult }) {
         {/* Overall Risk Card */}
         <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-sky-50/50 border border-slate-200/80 flex flex-col justify-between shadow-2xs">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Overall CAD Probability
-            </span>
+            <div className="flex justify-between items-center">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                CAD Disease Risk
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                Math.round(Math.max(overall_cad_risk, 1 - overall_cad_risk) * 100) >= 80 
+                  ? 'bg-sky-50 text-sky-700 border-sky-200' 
+                  : 'bg-slate-100 text-slate-600 border-slate-200'
+              }`}>
+                {Math.round(Math.max(overall_cad_risk, 1 - overall_cad_risk) * 100)}% Confidence
+              </span>
+            </div>
+
             <div className="flex items-baseline space-x-2 mt-2">
               <span className="text-3xl font-black text-slate-900">{cadPct}%</span>
-              <span className="text-xs text-slate-500 font-medium">CAD Risk</span>
+              <span className="text-xs text-slate-500 font-medium">Risk Score</span>
             </div>
+
+            <p className="text-[11px] text-slate-500 mt-1">
+              Model is <strong>{Math.round(Math.max(overall_cad_risk, 1 - overall_cad_risk) * 100)}% confident</strong> patient is{' '}
+              <strong className={overall_cad_risk >= 0.5 ? 'text-red-700' : 'text-emerald-700'}>
+                {overall_cad_risk >= 0.5 ? 'Stenotic (CAD)' : 'Normal (Healthy)'}
+              </strong>.
+            </p>
           </div>
           <div className="mt-3">{getRiskBadge(overall_cad_risk)}</div>
         </div>
