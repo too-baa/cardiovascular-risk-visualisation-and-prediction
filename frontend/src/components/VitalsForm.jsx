@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import demoPresets from '../../../demo_presets.json';
 import { 
   Users, 
@@ -11,64 +11,115 @@ import {
   ArrowRight,
   Search,
   Database,
-  Hash
+  Hash,
+  FileText,
+  HeartPulse,
+  ClipboardList
 } from 'lucide-react';
 
-// Clinical grouping of the 55 features for high clinical ergonomics
-const FEATURE_GROUPS = {
+// Comprehensive Clinical Grouping of all 55 features from Z-Alizadeh Sani / UCI dataset
+const ALL_55_FEATURE_GROUPS = {
   vitals: {
-    title: 'Core Vitals & History',
+    id: 'vitals',
+    title: 'Demographics & Vitals',
     icon: Stethoscope,
+    badge: '13 Features',
     fields: [
-      { key: 'Age', label: 'Patient Age', unit: 'yrs', type: 'number' },
-      { key: 'Sex', label: 'Sex', type: 'select', options: ['Male', 'Fmale'] },
-      { key: 'Weight', label: 'Body Weight', unit: 'kg', type: 'number' },
-      { key: 'Length', label: 'Height', unit: 'cm', type: 'number' },
-      { key: 'BMI', label: 'BMI Index', unit: 'kg/m²', type: 'number' },
-      { key: 'BP', label: 'Blood Pressure', unit: 'mmHg', type: 'number' },
-      { key: 'PR', label: 'Pulse Rate', unit: 'bpm', type: 'number' },
-      { key: 'HTN', label: 'Hypertension', type: 'select', options: [0, 1] },
+      { key: 'Age', label: 'Patient Age', unit: 'yrs', type: 'number', min: 20, max: 100 },
+      { key: 'Sex', label: 'Biological Sex', type: 'select', options: ['Male', 'Fmale'] },
+      { key: 'Weight', label: 'Body Weight', unit: 'kg', type: 'number', min: 30, max: 200 },
+      { key: 'Length', label: 'Height / Length', unit: 'cm', type: 'number', min: 100, max: 220 },
+      { key: 'BMI', label: 'Body Mass Index (BMI)', unit: 'kg/m²', type: 'number', step: 0.1 },
+      { key: 'BP', label: 'Systolic Blood Pressure', unit: 'mmHg', type: 'number', min: 70, max: 240 },
+      { key: 'PR', label: 'Pulse Rate', unit: 'bpm', type: 'number', min: 40, max: 180 },
       { key: 'DM', label: 'Diabetes Mellitus', type: 'select', options: [0, 1] },
+      { key: 'HTN', label: 'Hypertension', type: 'select', options: [0, 1] },
       { key: 'Current Smoker', label: 'Current Smoker', type: 'select', options: [0, 1] },
       { key: 'EX-Smoker', label: 'Ex-Smoker', type: 'select', options: [0, 1] },
       { key: 'FH', label: 'Family History CAD', type: 'select', options: [0, 1] },
-      { key: 'Obesity', label: 'Obesity', type: 'select', options: ['Y', 'N'] }
+      { key: 'Obesity', label: 'Obesity Status', type: 'select', options: ['Y', 'N'] }
     ]
   },
-  labs: {
-    title: 'Lipid Panel & Biomarkers',
-    icon: FlaskConical,
+  history: {
+    id: 'history',
+    title: 'Medical History',
+    icon: ClipboardList,
+    badge: '6 Features',
     fields: [
-      { key: 'FBS', label: 'Fasting Blood Sugar', unit: 'mg/dL', type: 'number' },
-      { key: 'LDL', label: 'LDL Cholesterol', unit: 'mg/dL', type: 'number' },
-      { key: 'HDL', label: 'HDL Cholesterol', unit: 'mg/dL', type: 'number' },
-      { key: 'TG', label: 'Triglycerides', unit: 'mg/dL', type: 'number' },
-      { key: 'CR', label: 'Serum Creatinine', unit: 'mg/dL', type: 'number' },
-      { key: 'BUN', label: 'Blood Urea Nitrogen', unit: 'mg/dL', type: 'number' },
-      { key: 'ESR', label: 'ESR Rate', unit: 'mm/hr', type: 'number' },
-      { key: 'HB', label: 'Hemoglobin', unit: 'g/dL', type: 'number' },
-      { key: 'K', label: 'Potassium (K+)', unit: 'mEq/L', type: 'number' },
-      { key: 'Na', label: 'Sodium (Na+)', unit: 'mEq/L', type: 'number' },
-      { key: 'WBC', label: 'White Blood Cell Count', unit: '/mcL', type: 'number' },
-      { key: 'PLT', label: 'Platelet Count', unit: '10³/mcL', type: 'number' }
+      { key: 'CRF', label: 'Chronic Renal Failure (CRF)', type: 'select', options: ['N', 'Y'] },
+      { key: 'CVA', label: 'Cerebrovascular Accident / Stroke (CVA)', type: 'select', options: ['N', 'Y'] },
+      { key: 'Airway disease', label: 'Chronic Airway Disease (COPD/Asthma)', type: 'select', options: ['N', 'Y'] },
+      { key: 'Thyroid Disease', label: 'Thyroid Disease', type: 'select', options: ['N', 'Y'] },
+      { key: 'CHF', label: 'Congestive Heart Failure (CHF)', type: 'select', options: ['N', 'Y'] },
+      { key: 'DLP', label: 'Dyslipidemia (DLP)', type: 'select', options: ['Y', 'N'] }
+    ]
+  },
+  exam: {
+    id: 'exam',
+    title: 'Physical Exam',
+    icon: HeartPulse,
+    badge: '5 Features',
+    fields: [
+      { key: 'Edema', label: 'Peripheral Edema', type: 'select', options: [0, 1] },
+      { key: 'Weak Peripheral Pulse', label: 'Weak Peripheral Pulse', type: 'select', options: ['N', 'Y'] },
+      { key: 'Lung rales', label: 'Pulmonary Rales', type: 'select', options: ['N', 'Y'] },
+      { key: 'Systolic Murmur', label: 'Systolic Murmur', type: 'select', options: ['N', 'Y'] },
+      { key: 'Diastolic Murmur', label: 'Diastolic Murmur', type: 'select', options: ['N', 'Y'] }
+    ]
+  },
+  symptoms: {
+    id: 'symptoms',
+    title: 'Symptoms & Angina',
+    icon: Activity,
+    badge: '7 Features',
+    fields: [
+      { key: 'Typical Chest Pain', label: 'Typical Angina', type: 'select', options: [0, 1] },
+      { key: 'Dyspnea', label: 'Shortness of Breath (Dyspnea)', type: 'select', options: ['N', 'Y'] },
+      { key: 'Function Class', label: 'NYHA Function Class', unit: '0–3', type: 'number', min: 0, max: 3 },
+      { key: 'Atypical', label: 'Atypical Chest Pain', type: 'select', options: ['N', 'Y'] },
+      { key: 'Nonanginal', label: 'Non-Anginal Chest Pain', type: 'select', options: ['N', 'Y'] },
+      { key: 'Exertional CP', label: 'Exertional Chest Pain', type: 'select', options: ['N', 'Y'] },
+      { key: 'LowTH Ang', label: 'Low Threshold Angina', type: 'select', options: ['N', 'Y'] }
     ]
   },
   ecg: {
-    title: 'Symptoms & ECG Findings',
-    icon: Activity,
+    id: 'ecg',
+    title: 'ECG & Echocardiogram',
+    icon: FileText,
+    badge: '10 Features',
     fields: [
-      { key: 'Typical Chest Pain', label: 'Typical Angina', type: 'select', options: [0, 1] },
-      { key: 'Dyspnea', label: 'Shortness of Breath', type: 'select', options: ['Y', 'N'] },
-      { key: 'Function Class', label: 'NYHA Function Class', unit: '0-4', type: 'number' },
-      { key: 'St Elevation', label: 'ST Elevation', type: 'select', options: [0, 1] },
-      { key: 'St Depression', label: 'ST Depression', type: 'select', options: [0, 1] },
-      { key: 'Tinversion', label: 'T-Wave Inversion', type: 'select', options: [0, 1] },
       { key: 'Q Wave', label: 'Pathological Q Wave', type: 'select', options: [0, 1] },
-      { key: 'EF-TTE', label: 'Ejection Fraction (EF)', unit: '%', type: 'number' },
-      { key: 'Region RWMA', label: 'Regional Wall Motion (RWMA)', type: 'number' },
-      { key: 'Systolic Murmur', label: 'Systolic Murmur', type: 'select', options: ['Y', 'N'] },
-      { key: 'Diastolic Murmur', label: 'Diastolic Murmur', type: 'select', options: ['Y', 'N'] },
-      { key: 'VHD', label: 'Valvular Heart Disease', type: 'select', options: ['N', 'Mild', 'Severe'] }
+      { key: 'St Elevation', label: 'ST Segment Elevation', type: 'select', options: [0, 1] },
+      { key: 'St Depression', label: 'ST Segment Depression', type: 'select', options: [0, 1] },
+      { key: 'Tinversion', label: 'T-Wave Inversion', type: 'select', options: [0, 1] },
+      { key: 'LVH', label: 'Left Ventricular Hypertrophy (LVH)', type: 'select', options: ['N', 'Y'] },
+      { key: 'Poor R Progression', label: 'Poor R-Wave Progression', type: 'select', options: ['N', 'Y'] },
+      { key: 'BBB', label: 'Bundle Branch Block (BBB)', type: 'select', options: ['N', 'LBBB', 'RBBB'] },
+      { key: 'EF-TTE', label: 'Ejection Fraction (EF-TTE)', unit: '%', type: 'number', min: 10, max: 80 },
+      { key: 'Region RWMA', label: 'Regional Wall Motion (RWMA)', unit: '0–4', type: 'number', min: 0, max: 4 },
+      { key: 'VHD', label: 'Valvular Heart Disease (VHD)', type: 'select', options: ['N', 'mild', 'Moderate', 'Severe'] }
+    ]
+  },
+  labs: {
+    id: 'labs',
+    title: 'Biomarkers & Labs',
+    icon: FlaskConical,
+    badge: '14 Features',
+    fields: [
+      { key: 'FBS', label: 'Fasting Blood Sugar', unit: 'mg/dL', type: 'number', min: 50, max: 500 },
+      { key: 'CR', label: 'Serum Creatinine', unit: 'mg/dL', type: 'number', step: 0.1, min: 0.3, max: 15 },
+      { key: 'TG', label: 'Triglycerides (TG)', unit: 'mg/dL', type: 'number', min: 30, max: 1000 },
+      { key: 'LDL', label: 'LDL Cholesterol', unit: 'mg/dL', type: 'number', min: 20, max: 400 },
+      { key: 'HDL', label: 'HDL Cholesterol', unit: 'mg/dL', type: 'number', min: 10, max: 150 },
+      { key: 'BUN', label: 'Blood Urea Nitrogen (BUN)', unit: 'mg/dL', type: 'number', min: 5, max: 100 },
+      { key: 'ESR', label: 'Erythrocyte Sedimentation (ESR)', unit: 'mm/hr', type: 'number', min: 1, max: 120 },
+      { key: 'HB', label: 'Hemoglobin (HB)', unit: 'g/dL', type: 'number', step: 0.1, min: 5, max: 22 },
+      { key: 'K', label: 'Serum Potassium (K+)', unit: 'mEq/L', type: 'number', step: 0.1, min: 2, max: 8 },
+      { key: 'Na', label: 'Serum Sodium (Na+)', unit: 'mEq/L', type: 'number', min: 110, max: 165 },
+      { key: 'WBC', label: 'White Blood Cell Count', unit: '/mcL', type: 'number', min: 2000, max: 30000 },
+      { key: 'Lymph', label: 'Lymphocyte Ratio', unit: '%', type: 'number', min: 1, max: 80 },
+      { key: 'Neut', label: 'Neutrophil Ratio', unit: '%', type: 'number', min: 10, max: 95 },
+      { key: 'PLT', label: 'Platelet Count (PLT)', unit: '10³/mcL', type: 'number', min: 50, max: 900 }
     ]
   }
 };
@@ -101,6 +152,7 @@ export default function VitalsForm({ onPredict, loading }) {
   const [formData, setFormData] = useState({});
   const [selectedPreset, setSelectedPreset] = useState('Patient 1 - Healthy / Low Risk');
   const [activeTab, setActiveTab] = useState('vitals');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Real patient records (303 records from UCI dataset)
   const [datasetPatients, setDatasetPatients] = useState([]);
@@ -131,13 +183,12 @@ export default function VitalsForm({ onPredict, loading }) {
       });
   }, []);
 
-  // Handle changing to a specific real patient row #0 to #302
   const handleSelectPatientNumber = (num) => {
     const id = parseInt(num, 10);
     if (isNaN(id) || id < 0 || id >= (datasetPatients.length || 303)) return;
 
     setPatientIdInput(id);
-    setSelectedPreset(''); // Custom row selected
+    setSelectedPreset('');
 
     if (datasetPatients[id]) {
       const p = datasetPatients[id];
@@ -173,7 +224,26 @@ export default function VitalsForm({ onPredict, loading }) {
     onPredict(formData);
   };
 
-  const currentGroup = FEATURE_GROUPS[activeTab];
+  // Filter fields if user typed a search query
+  const allFields = useMemo(() => {
+    const list = [];
+    Object.values(ALL_55_FEATURE_GROUPS).forEach(grp => {
+      grp.fields.forEach(f => list.push({ ...f, groupTitle: grp.title }));
+    });
+    return list;
+  }, []);
+
+  const searchedFields = useMemo(() => {
+    if (!searchQuery.trim()) return null;
+    const q = searchQuery.toLowerCase();
+    return allFields.filter(f => 
+      f.key.toLowerCase().includes(q) || 
+      f.label.toLowerCase().includes(q) || 
+      f.groupTitle.toLowerCase().includes(q)
+    );
+  }, [searchQuery, allFields]);
+
+  const currentGroup = ALL_55_FEATURE_GROUPS[activeTab] || ALL_55_FEATURE_GROUPS['vitals'];
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200/90 flex flex-col h-full">
@@ -185,8 +255,8 @@ export default function VitalsForm({ onPredict, loading }) {
           </h2>
           <p className="text-xs text-slate-500">UCI Z-Alizadeh Sani Cohort (303 Hospital Patients)</p>
         </div>
-        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-100">
-          55 Biomarkers
+        <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+          All 55 Features Active
         </span>
       </div>
 
@@ -229,22 +299,22 @@ export default function VitalsForm({ onPredict, loading }) {
           </button>
         </div>
 
-        {/* Real Hospital Ground-Truth Angiogram Comparison Card */}
+        {/* Hospital Angiography Ground Truth */}
         {activeGroundTruth && (
-          <div className="mt-2.5 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-            <span className="font-semibold text-slate-600">Actual Hospital Finding:</span>
-            <div className="flex space-x-1.5">
-              <span className={`px-1.5 py-0.2 rounded font-bold text-[10px] ${
+          <div className="mt-2.5 pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between text-[11px]">
+            <span className="font-bold text-slate-600">Actual Hospital Finding:</span>
+            <div className="flex items-center space-x-1.5 font-mono">
+              <span className={`px-1.5 py-0.2 rounded font-semibold ${
                 activeGroundTruth.LAD === 'Stenotic' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
               }`}>
                 LAD: {activeGroundTruth.LAD}
               </span>
-              <span className={`px-1.5 py-0.2 rounded font-bold text-[10px] ${
+              <span className={`px-1.5 py-0.2 rounded font-semibold ${
                 activeGroundTruth.LCX === 'Stenotic' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
               }`}>
                 LCX: {activeGroundTruth.LCX}
               </span>
-              <span className={`px-1.5 py-0.2 rounded font-bold text-[10px] ${
+              <span className={`px-1.5 py-0.2 rounded font-semibold ${
                 activeGroundTruth.RCA === 'Stenotic' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
               }`}>
                 RCA: {activeGroundTruth.RCA}
@@ -254,33 +324,31 @@ export default function VitalsForm({ onPredict, loading }) {
         )}
       </div>
 
-      {/* Patient Demo Presets Quick Cards */}
-      <div className="mb-4 space-y-1.5">
-        <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+      {/* Benchmark Case Studies */}
+      <div className="mb-4">
+        <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-2">
           Or Select Benchmark Case Study
         </label>
         <div className="space-y-1.5">
-          {Object.keys(PRESET_SUMMARIES).map((presetKey) => {
-            const pInfo = PRESET_SUMMARIES[presetKey];
-            const isSelected = selectedPreset === presetKey;
-
+          {Object.entries(PRESET_SUMMARIES).map(([key, meta]) => {
+            const isSelected = selectedPreset === key;
             return (
               <button
+                key={key}
                 type="button"
-                key={presetKey}
-                onClick={() => handleSelectPreset(presetKey)}
-                className={`w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between shadow-2xs ${
-                  isSelected 
-                    ? 'bg-sky-50/80 border-sky-400 ring-1 ring-sky-300' 
-                    : 'bg-white hover:bg-slate-50 border-slate-200'
+                onClick={() => handleSelectPreset(key)}
+                className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between ${
+                  isSelected
+                    ? 'border-sky-500 bg-sky-50/70 shadow-xs ring-1 ring-sky-400'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
                 }`}
               >
                 <div>
-                  <div className="text-xs font-bold text-slate-900">{pInfo.label}</div>
-                  <div className="text-[11px] text-slate-500">{pInfo.details}</div>
+                  <span className="text-xs font-bold text-slate-900 block">{meta.label}</span>
+                  <span className="text-[11px] text-slate-500 block mt-0.5">{meta.details}</span>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${pInfo.badgeClass}`}>
-                  {pInfo.badge}
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${meta.badgeClass}`}>
+                  {meta.badge}
                 </span>
               </button>
             );
@@ -288,82 +356,142 @@ export default function VitalsForm({ onPredict, loading }) {
         </div>
       </div>
 
-      {/* Categorized Clinical Navigation Tabs */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100/90 rounded-xl mb-4 border border-slate-200/60">
-        {Object.entries(FEATURE_GROUPS).map(([tabKey, group]) => {
-          const Icon = group.icon;
-          const isActive = activeTab === tabKey;
-          return (
-            <button
-              type="button"
-              key={tabKey}
-              onClick={() => setActiveTab(tabKey)}
-              className={`py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition ${
-                isActive 
-                  ? 'bg-white text-slate-900 shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5 text-sky-600" />
-              <span className="truncate">{group.title.split(' ')[0]}</span>
-            </button>
-          );
-        })}
+      {/* Search Input across all 55 features */}
+      <div className="relative mb-3">
+        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Filter any of 55 clinical features..."
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white transition"
+        />
+        {searchQuery && (
+          <button 
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 text-xs"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
-      {/* Form Fields for Active Tab */}
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col justify-between overflow-hidden">
-        <div className="overflow-y-auto pr-1 max-h-[300px] space-y-3">
-          <div className="grid grid-cols-2 gap-2.5">
-            {currentGroup.fields.map((field) => {
-              const val = formData[field.key];
+      {/* Feature Group Navigation Tabs (Shown when not actively searching) */}
+      {!searchQuery && (
+        <div className="grid grid-cols-3 gap-1 mb-3 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60">
+          {Object.values(ALL_55_FEATURE_GROUPS).map((group) => {
+            const Icon = group.icon;
+            const isActive = activeTab === group.id;
+            return (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => setActiveTab(group.id)}
+                className={`flex items-center justify-center space-x-1 py-1.5 px-1 rounded-lg text-[10px] font-bold transition ${
+                  isActive
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                }`}
+                title={group.title}
+              >
+                <Icon className="w-3 h-3 text-sky-600 flex-shrink-0" />
+                <span className="truncate">{group.title.split(' ')[0]}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-              return (
-                <div key={field.key} className="flex flex-col">
-                  <label className="text-[11px] font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                    <span className="truncate" title={field.label}>{field.label}</span>
-                    {field.unit && (
-                      <span className="text-[10px] text-slate-400 font-mono font-normal">
-                        {field.unit}
-                      </span>
+      {/* Input Fields Area */}
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto pr-1 space-y-3 mb-4 max-h-[320px]">
+          {searchedFields ? (
+            searchedFields.length === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-400">
+                No feature matches "{searchQuery}"
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5">
+                {searchedFields.map((field) => (
+                  <div key={field.key} className="bg-slate-50/80 p-2 rounded-xl border border-slate-200">
+                    <div className="flex justify-between text-[11px] mb-1">
+                      <span className="font-semibold text-slate-700 truncate" title={field.label}>{field.label}</span>
+                      {field.unit && <span className="text-slate-400 text-[10px] ml-1">{field.unit}</span>}
+                    </div>
+                    {field.type === 'select' ? (
+                      <select
+                        value={formData[field.key] ?? ''}
+                        onChange={(e) => handleChange(field.key, e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs text-slate-900 font-medium focus:border-sky-500"
+                      >
+                        {field.options.map((opt) => (
+                          <option key={String(opt)} value={opt}>
+                            {String(opt)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="number"
+                        step={field.step || '1'}
+                        value={formData[field.key] ?? ''}
+                        onChange={(e) => handleChange(field.key, e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs text-slate-900 font-medium focus:border-sky-500"
+                      />
                     )}
-                  </label>
-
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            <div className="grid grid-cols-2 gap-2.5">
+              {currentGroup.fields.map((field) => (
+                <div key={field.key} className="bg-slate-50/80 p-2 rounded-xl border border-slate-200">
+                  <div className="flex justify-between text-[11px] mb-1">
+                    <span className="font-semibold text-slate-700 truncate" title={field.label}>{field.label}</span>
+                    {field.unit && <span className="text-slate-400 text-[10px] ml-1">{field.unit}</span>}
+                  </div>
                   {field.type === 'select' ? (
                     <select
-                      value={val !== undefined ? val : ''}
+                      value={formData[field.key] ?? ''}
                       onChange={(e) => handleChange(field.key, e.target.value)}
-                      className="bg-white border border-slate-300 hover:border-slate-400 rounded-lg p-1.5 text-xs text-slate-800 font-medium focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none transition shadow-2xs"
+                      className="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs text-slate-900 font-medium focus:border-sky-500"
                     >
                       {field.options.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
+                        <option key={String(opt)} value={opt}>
+                          {String(opt)}
                         </option>
                       ))}
                     </select>
                   ) : (
                     <input
                       type="number"
-                      step="any"
-                      value={val !== undefined ? val : ''}
+                      step={field.step || '1'}
+                      value={formData[field.key] ?? ''}
                       onChange={(e) => handleChange(field.key, e.target.value)}
-                      className="bg-white border border-slate-300 hover:border-slate-400 rounded-lg p-1.5 text-xs text-slate-800 font-medium focus:border-sky-500 focus:ring-2 focus:ring-sky-100 focus:outline-none transition shadow-2xs"
+                      className="w-full bg-white border border-slate-300 rounded-lg p-1.5 text-xs text-slate-900 font-medium focus:border-sky-500"
                     />
                   )}
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Action Button */}
+        {/* Prediction Submission Button */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full mt-4 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl transition duration-200 shadow-md disabled:opacity-50 flex items-center justify-center space-x-2 text-xs"
+          className="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-700 active:bg-sky-800 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center space-x-2 disabled:opacity-50"
         >
-          <span>{loading ? 'Evaluating Model & SHAP Explainer...' : 'Run Coronary Risk Analysis'}</span>
-          <ArrowRight className="w-4 h-4" />
+          {loading ? (
+            <span>Computing 55-Feature ML Inference...</span>
+          ) : (
+            <>
+              <span>Run Full 55-Feature Prediction</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </form>
     </div>

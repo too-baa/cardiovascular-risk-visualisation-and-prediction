@@ -1,4 +1,5 @@
 import joblib
+import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,15 @@ print("All pipelines loaded successfully!")
 @app.get("/")
 def health_check():
     return {"status": "healthy", "service": "CardioRisk Inference Engine"}
+
+@app.get("/predict")
+def predict_info():
+    return {
+        "status": "online",
+        "service": "CardioRisk Inference Engine",
+        "message": "The prediction endpoint accepts POST requests with patient vital features. For interactive testing, visit /docs",
+        "interactive_docs": "http://127.0.0.1:8000/docs"
+    }
 
 @app.post("/predict")
 def predict_patient(patient_data: dict):
@@ -92,3 +102,8 @@ def predict_patient(patient_data: dict):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="127.0.0.1", port=8000, reload=False)
+
