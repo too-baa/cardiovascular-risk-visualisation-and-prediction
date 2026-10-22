@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import demoPresets from '../../../demo_presets.json';
+import demoPresets from '../demo_presets.json';
 import { 
   Users, 
   Stethoscope, 

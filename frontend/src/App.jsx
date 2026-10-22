@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import VitalsForm from './components/VitalsForm';
 import HeartViewer3D from './components/HeartViewer3D';
 import RiskDashboard from './components/RiskDashboard';
-import demoPresets from '../../demo_presets.json';
+import demoPresets from './demo_presets.json';
 import { Activity, ShieldCheck, Heart, Sparkles } from 'lucide-react';
 
 export default function App() {
