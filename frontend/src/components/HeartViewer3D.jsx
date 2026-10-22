@@ -156,13 +156,13 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick }) {
         />
       </mesh>
 
-      {/* Always-Visible 3D Floating Clinical Tag (Facing user from all angles) */}
-      <Html position={vData.labelPos} center distanceFactor={4.5} zIndexRange={[100, 0]}>
+      {/* Always-Visible 3D Floating Clinical Tag (Fixed, compact size across mobile & desktop) */}
+      <Html position={vData.labelPos} center zIndexRange={[40, 0]}>
         <button
           onClick={(e) => { e.stopPropagation(); onClick(vesselKey); }}
-          className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-full border shadow-lg cursor-pointer transition-all duration-200 backdrop-blur-md select-none ${
+          className={`flex items-center space-x-1.5 px-2 py-0.5 rounded-full border shadow-md cursor-pointer transition-all duration-150 backdrop-blur-md select-none ${
             isSelected 
-              ? 'ring-2 ring-white scale-110' 
+              ? 'ring-2 ring-white scale-105' 
               : 'hover:scale-105'
           } ${
             risk > 0.6 
@@ -171,10 +171,10 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick }) {
                 ? 'bg-amber-500/95 text-white border-amber-300' 
                 : 'bg-emerald-600/95 text-white border-emerald-300'
           }`}
-          style={{ whiteSpace: 'nowrap' }}
+          style={{ whiteSpace: 'nowrap', pointerEvents: 'auto' }}
         >
-          <span className="font-black text-[11px] tracking-wide">{vesselKey}</span>
-          <span className="text-[10px] font-bold opacity-90">
+          <span className="font-bold text-[10px] tracking-wide">{vesselKey}</span>
+          <span className="text-[10px] font-mono font-bold opacity-90">
             {Math.round(risk * 100)}%
           </span>
           <span className="text-[9px] uppercase font-semibold px-1 py-0.2 rounded bg-black/25">
@@ -567,28 +567,25 @@ export default function HeartViewer3D({ vesselRisks }) {
         </Canvas>
 
         {/* Selected Vessel HUD Card (Bottom) */}
-        <div className="absolute bottom-4 left-4 right-4 z-10 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-slate-200/90 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2.5">
-              <span className="text-base font-black text-slate-900">{activeMeta.name}</span>
-              <span className="text-xs font-mono font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
+        <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-10 bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-slate-200/90 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4">
+          <div className="space-y-0.5 sm:space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm sm:text-base font-black text-slate-900">{activeMeta.name}</span>
+              <span className="text-[10px] sm:text-xs font-mono font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-100">
                 {activeMeta.acronym}
               </span>
-              <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${activeDetails.badgeClass}`}>
+              <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border ${activeDetails.badgeClass}`}>
                 {activeDetails.band} • {Math.round(activeRisk * 100)}% Risk
               </span>
             </div>
-            <div className="text-xs text-slate-600">
-              <span className="text-slate-400 font-semibold">Perfusion Territory: </span>
+            <div className="text-[11px] sm:text-xs text-slate-600 line-clamp-1 sm:line-clamp-none">
+              <span className="text-slate-400 font-semibold">Territory: </span>
               {activeMeta.territory}
-            </div>
-            <div className="text-xs text-slate-500 italic">
-              {activeMeta.clinicalSignificance}
             </div>
           </div>
 
-          <div className="text-right flex-shrink-0">
-            <div className="text-xs font-medium text-slate-600 max-w-sm text-left md:text-right">
+          <div className="text-left md:text-right flex-shrink-0">
+            <div className="text-[11px] sm:text-xs font-medium text-slate-600 max-w-sm">
               {activeDetails.clinicalAction}
             </div>
           </div>

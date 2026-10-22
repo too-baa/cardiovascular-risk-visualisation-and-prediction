@@ -74,7 +74,7 @@ export default function RiskDashboard({ predictionResult }) {
             </span>
             <div className="flex items-baseline space-x-2 mt-2">
               <span className="text-3xl font-black text-slate-900">{cadPct}%</span>
-              <span className="text-xs text-slate-500 font-medium">Confidence</span>
+              <span className="text-xs text-slate-500 font-medium">CAD Risk</span>
             </div>
           </div>
           <div className="mt-3">{getRiskBadge(overall_cad_risk)}</div>
