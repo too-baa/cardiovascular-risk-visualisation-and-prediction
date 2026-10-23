@@ -11,7 +11,9 @@ import {
   HelpCircle, 
   X, 
   Stethoscope,
-  Tag
+  Tag,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 // Preload the authentic high-definition 3D realistic heart asset
@@ -106,7 +108,6 @@ const VASCULAR_NETWORK = {
 };
 
 // Prominent, High-Visibility Coronary Artery Tube
-// Caliber is bold (0.038) and slightly elevated from the heart surface with glow so it never gets lost
 function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabels = true }) {
   const meshRef = useRef();
   const vData = VASCULAR_NETWORK[vesselKey];
@@ -118,7 +119,6 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabe
     return new THREE.TubeGeometry(curve, 54, 0.036, 16, false);
   }, [vData]);
 
-  // Dynamic pulsing animation for high-risk stenotic vessels
   useFrame(({ clock }) => {
     if (meshRef.current) {
       const t = clock.getElapsedTime();
@@ -135,7 +135,7 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabe
 
   return (
     <group onClick={(e) => { e.stopPropagation(); onClick(vesselKey); }}>
-      {/* Outer Luminescent Sheath (Ensures visibility against any heart texture) */}
+      {/* Outer Luminescent Sheath */}
       <mesh geometry={tubeGeometry} renderOrder={15}>
         <meshBasicMaterial
           color={baseColor}
@@ -186,7 +186,7 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabe
   );
 }
 
-// 3D Realistic Heart Model Scene (Lives safely inside Canvas for R3F hooks)
+// 3D Realistic Heart Model Scene (Fits FULL heart uncropped with 360° rotation room)
 function RealisticHeartScene({ 
   enableHeartbeat, 
   isTranslucent, 
@@ -212,9 +212,9 @@ function RealisticHeartScene({
     s.position.y -= center.y;
     s.position.z -= center.z;
 
-    // Increased to 4.3 so the heart commands the entire 3D stage prominently
+    // Perfectly sized scale so the full heart (aorta down to apex) fits comfortably
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 4.3 / (maxDim || 1);
+    const scale = 2.65 / (maxDim || 1);
     s.scale.set(scale, scale, scale);
 
     // Dynamic material adaptation: Solid photorealistic texture vs semi-transparent X-ray
@@ -256,7 +256,7 @@ function RealisticHeartScene({
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.16, 0]}>
+    <group ref={groupRef} position={[0, -0.05, 0]}>
       {/* Realistic Anatomical Heart Mesh (From photorealistic GLTF) */}
       <primitive object={clonedScene} />
 
@@ -275,7 +275,7 @@ function RealisticHeartScene({
   );
 }
 
-// Camera View Controller
+// Camera View Controller - Perfectly Framed for Full Heart View
 function CameraController({ viewTarget }) {
   const { camera } = useThree();
 
@@ -283,15 +283,15 @@ function CameraController({ viewTarget }) {
     if (!viewTarget) return;
 
     if (viewTarget === 'anterior') {
-      camera.position.set(0, 0.1, 2.15);
+      camera.position.set(0, 0.05, 3.1);
     } else if (viewTarget === 'left') {
-      camera.position.set(-1.85, 0.25, 1.3);
+      camera.position.set(-2.8, 0.3, 1.85);
     } else if (viewTarget === 'right') {
-      camera.position.set(1.85, 0.25, 1.3);
+      camera.position.set(2.8, 0.3, 1.85);
     } else if (viewTarget === 'top') {
-      camera.position.set(0, 2.2, 0.6);
+      camera.position.set(0, 3.2, 0.9);
     }
-    camera.lookAt(0, 0.05, 0);
+    camera.lookAt(0, 0, 0);
   }, [viewTarget, camera]);
 
   return null;
@@ -301,8 +301,9 @@ function CameraController({ viewTarget }) {
 export default function HeartViewer3D({ vesselRisks }) {
   const [autoRotate, setAutoRotate] = useState(false);
   const [enableHeartbeat, setEnableHeartbeat] = useState(true);
-  const [isTranslucent, setIsTranslucent] = useState(false); // Default to realistic textured solid
+  const [isTranslucent, setIsTranslucent] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false); // Full Theater Mode
   const [selectedVessel, setSelectedVessel] = useState('LAD');
   const [viewPreset, setViewPreset] = useState('anterior');
   const [showClinicalGuide, setShowClinicalGuide] = useState(false);
@@ -312,36 +313,60 @@ export default function HeartViewer3D({ vesselRisks }) {
   const activeDetails = getRiskDetails(activeRisk);
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl shadow-sm p-6 flex flex-col relative overflow-hidden transition-all duration-300">
+    <div className={`transition-all duration-300 flex flex-col ${
+      isExpanded 
+        ? 'fixed inset-0 z-50 p-4 md:p-6 bg-slate-950/95 backdrop-blur-2xl overflow-hidden' 
+        : 'bg-white border border-slate-200/90 rounded-2xl shadow-sm p-6 relative overflow-hidden'
+    }`}>
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-100">
+      <div className={`flex flex-wrap items-center justify-between gap-4 mb-4 pb-3 border-b ${
+        isExpanded ? 'border-slate-800 text-white' : 'border-slate-100 text-slate-900'
+      }`}>
         <div className="flex items-center space-x-3.5">
-          <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400 shadow-xs">
             <Activity className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+              <h3 className={`text-base font-bold tracking-tight ${isExpanded ? 'text-white' : 'text-slate-900'}`}>
                 3D Coronary Anatomy & Stenosis Mapping
               </h3>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
                 LAD • LCX • RCA
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Authentic anatomical heart model with prominent high-visibility coronary branches
+            <p className={`text-xs ${isExpanded ? 'text-slate-400' : 'text-slate-500'} mt-0.5`}>
+              Authentic anatomical heart digital twin with 360° orbit rotation & vessel risk illumination
             </p>
           </div>
         </div>
 
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Theater Fullscreen Toggle */}
+          <button
+            onClick={() => setIsExpanded(e => !e)}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition shadow-xs ${
+              isExpanded 
+                ? 'bg-sky-600 text-white border-sky-500 shadow-md' 
+                : 'bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200'
+            }`}
+            title={isExpanded ? 'Exit Fullscreen' : 'Expand View to Full Screen'}
+          >
+            {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            <span>{isExpanded ? 'Exit Fullscreen' : 'Expand View'}</span>
+          </button>
+
           {/* Guide Button */}
           <button
             onClick={() => setShowClinicalGuide(g => !g)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition shadow-xs"
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition shadow-xs ${
+              isExpanded 
+                ? 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700' 
+                : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
+            }`}
           >
-            <HelpCircle className="w-3.5 h-3.5 text-sky-600" />
+            <HelpCircle className="w-3.5 h-3.5 text-sky-500" />
             <span>Clinical Meaning</span>
           </button>
 
@@ -350,8 +375,10 @@ export default function HeartViewer3D({ vesselRisks }) {
             onClick={() => setIsTranslucent(t => !t)}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition shadow-xs ${
               isTranslucent 
-                ? 'bg-slate-900 text-white border-slate-900' 
-                : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
+                ? 'bg-slate-800 text-sky-400 border-sky-500/40' 
+                : isExpanded
+                  ? 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
             }`}
             title="Toggle between photorealistic solid muscle and semi-transparent X-ray view"
           >
@@ -364,11 +391,11 @@ export default function HeartViewer3D({ vesselRisks }) {
             onClick={() => setEnableHeartbeat(h => !h)}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition shadow-xs ${
               enableHeartbeat 
-                ? 'bg-slate-100 text-slate-800 border-slate-300' 
-                : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
+                ? isExpanded ? 'bg-slate-800 text-slate-100 border-slate-600' : 'bg-slate-100 text-slate-800 border-slate-300' 
+                : isExpanded ? 'bg-slate-900 text-slate-400 border-slate-700' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
             }`}
           >
-            <Activity className="w-3.5 h-3.5 text-slate-600" />
+            <Activity className="w-3.5 h-3.5 text-rose-500" />
             <span>Heartbeat</span>
           </button>
 
@@ -377,11 +404,11 @@ export default function HeartViewer3D({ vesselRisks }) {
             onClick={() => setAutoRotate(r => !r)}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition shadow-xs ${
               autoRotate 
-                ? 'bg-sky-50 text-sky-700 border-sky-200' 
-                : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
+                ? 'bg-sky-500/20 text-sky-400 border-sky-500/50' 
+                : isExpanded ? 'bg-slate-900 text-slate-400 border-slate-700' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
             }`}
           >
-            <RotateCw className={`w-3.5 h-3.5 text-sky-600 ${autoRotate ? 'animate-spin' : ''}`} />
+            <RotateCw className={`w-3.5 h-3.5 text-sky-500 ${autoRotate ? 'animate-spin' : ''}`} />
             <span>Auto-Rotate</span>
           </button>
 
@@ -390,12 +417,12 @@ export default function HeartViewer3D({ vesselRisks }) {
             onClick={() => setShowLabels(l => !l)}
             className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition shadow-xs ${
               showLabels 
-                ? 'bg-sky-50 text-sky-700 border-sky-200' 
-                : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
+                ? 'bg-sky-500/20 text-sky-400 border-sky-500/50' 
+                : isExpanded ? 'bg-slate-900 text-slate-400 border-slate-700' : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
             }`}
             title="Toggle 3D floating vessel badges on/off"
           >
-            <Tag className="w-3.5 h-3.5 text-sky-600" />
+            <Tag className="w-3.5 h-3.5 text-sky-500" />
             <span>{showLabels ? '3D Tags' : 'No Tags'}</span>
           </button>
         </div>
@@ -450,14 +477,20 @@ export default function HeartViewer3D({ vesselRisks }) {
       {/* Camera Angles & Vessel Selectors */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         {/* Camera Angles */}
-        <div className="flex items-center space-x-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60">
-          <span className="text-[11px] font-bold text-slate-500 px-2 flex items-center gap-1">
-            <Compass className="w-3 h-3 text-slate-400" /> View Angle:
+        <div className={`flex items-center space-x-1.5 p-1 rounded-xl border ${
+          isExpanded ? 'bg-slate-900 border-slate-800' : 'bg-slate-100/80 border-slate-200/60'
+        }`}>
+          <span className={`text-[11px] font-bold px-2 flex items-center gap-1 ${
+            isExpanded ? 'text-slate-400' : 'text-slate-500'
+          }`}>
+            <Compass className="w-3 h-3 text-sky-500" /> View Angle:
           </span>
           <button
             onClick={() => setViewPreset('anterior')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-              viewPreset === 'anterior' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              viewPreset === 'anterior' 
+                ? isExpanded ? 'bg-sky-600 text-white shadow-sm' : 'bg-white text-slate-900 shadow-xs' 
+                : isExpanded ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Anterior (LAD)
@@ -465,7 +498,9 @@ export default function HeartViewer3D({ vesselRisks }) {
           <button
             onClick={() => setViewPreset('left')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-              viewPreset === 'left' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              viewPreset === 'left' 
+                ? isExpanded ? 'bg-sky-600 text-white shadow-sm' : 'bg-white text-slate-900 shadow-xs' 
+                : isExpanded ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Lateral Left (LCX)
@@ -473,7 +508,9 @@ export default function HeartViewer3D({ vesselRisks }) {
           <button
             onClick={() => setViewPreset('right')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-              viewPreset === 'right' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              viewPreset === 'right' 
+                ? isExpanded ? 'bg-sky-600 text-white shadow-sm' : 'bg-white text-slate-900 shadow-xs' 
+                : isExpanded ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Right Branch (RCA)
@@ -481,7 +518,9 @@ export default function HeartViewer3D({ vesselRisks }) {
           <button
             onClick={() => setViewPreset('top')}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
-              viewPreset === 'top' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              viewPreset === 'top' 
+                ? isExpanded ? 'bg-sky-600 text-white shadow-sm' : 'bg-white text-slate-900 shadow-xs' 
+                : isExpanded ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Top Overview
@@ -501,8 +540,10 @@ export default function HeartViewer3D({ vesselRisks }) {
                 onClick={() => setSelectedVessel(vKey)}
                 className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center space-x-1.5 shadow-xs ${
                   isCurrent 
-                    ? 'bg-slate-900 text-white border-slate-900' 
-                    : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'bg-slate-900 text-white border-slate-900 ring-2 ring-sky-500' 
+                    : isExpanded 
+                      ? 'bg-slate-900 text-slate-300 border-slate-800 hover:bg-slate-800'
+                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 <span>{vKey}</span>
@@ -517,15 +558,19 @@ export default function HeartViewer3D({ vesselRisks }) {
         </div>
       </div>
 
-      {/* 3D Canvas Viewport - Bold, Large & Unobstructed */}
-      <div className="w-full h-[580px] lg:h-[660px] bg-gradient-to-b from-slate-50 via-white to-sky-50/20 rounded-2xl overflow-hidden relative border border-slate-200/80 shadow-inner">
+      {/* Massive 3D Canvas Box - Spacious & Unclipped */}
+      <div className={`w-full transition-all duration-300 rounded-2xl overflow-hidden relative border shadow-inner ${
+        isExpanded 
+          ? 'flex-1 min-h-[500px] bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border-slate-800' 
+          : 'h-[640px] md:h-[720px] lg:h-[760px] xl:h-[820px] bg-gradient-to-b from-slate-50 via-white to-sky-50/20 border-slate-200/80'
+      }`}>
         {/* Navigation Tip */}
         <div className="absolute top-3 left-3 z-10 pointer-events-none flex items-center space-x-1.5 bg-white/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200/80 text-[11px] font-medium text-slate-600 shadow-xs">
           <Eye className="w-3.5 h-3.5 text-sky-600" />
-          <span>Click & Drag to Rotate • Scroll to Zoom</span>
+          <span>Click & Drag to Rotate 360° • Scroll to Zoom</span>
         </div>
 
-        {/* Risk Legend - Compact Single Row Pill */}
+        {/* Risk Legend */}
         <div className="absolute top-3 right-3 z-10 bg-white/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-xs text-[11px] flex items-center space-x-3">
           <div className="flex items-center space-x-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs"></span>
@@ -543,7 +588,7 @@ export default function HeartViewer3D({ vesselRisks }) {
 
         {/* Three.js R3F 3D Scene */}
         <Canvas 
-          camera={{ position: [0, 0.1, 2.15], fov: 42 }}
+          camera={{ position: [0, 0.05, 3.1], fov: 44 }}
           gl={{ antialias: true, alpha: true }}
         >
           {/* Studio Medical Lighting */}
@@ -574,24 +619,28 @@ export default function HeartViewer3D({ vesselRisks }) {
 
           {/* Smooth 360° Controls */}
           <OrbitControls
-            target={[0, 0.05, 0]}
+            target={[0, 0, 0]}
             enableZoom={true}
             enablePan={false}
             enableRotate={true}
             autoRotate={autoRotate}
             autoRotateSpeed={1.2}
-            minDistance={1.2}
-            maxDistance={4.2}
+            minDistance={1.8}
+            maxDistance={5.8}
             dampingFactor={0.05}
           />
         </Canvas>
       </div>
 
-      {/* Selected Vessel Clinical Detail Card (Cleanly placed BELOW the Canvas) */}
-      <div className="mt-3.5 bg-gradient-to-r from-slate-50 via-white to-sky-50/30 p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 transition-all">
+      {/* Dedicated Selected Vessel Clinical Detail Card (Below the Canvas) */}
+      <div className={`mt-3.5 p-3 sm:p-4 rounded-xl border shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 transition-all ${
+        isExpanded 
+          ? 'bg-slate-900/90 border-slate-800 text-slate-200' 
+          : 'bg-gradient-to-r from-slate-50 via-white to-sky-50/30 border-slate-200 text-slate-900'
+      }`}>
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <span className="text-sm sm:text-base font-black text-slate-900">{activeMeta.name}</span>
+            <span className={`text-sm sm:text-base font-black ${isExpanded ? 'text-white' : 'text-slate-900'}`}>{activeMeta.name}</span>
             <span className="text-[10px] sm:text-xs font-mono font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-100">
               {activeMeta.acronym}
             </span>
@@ -599,14 +648,14 @@ export default function HeartViewer3D({ vesselRisks }) {
               {activeDetails.band} • {Math.round(activeRisk * 100)}% Risk
             </span>
           </div>
-          <div className="text-[11px] sm:text-xs text-slate-600">
+          <div className={`text-[11px] sm:text-xs ${isExpanded ? 'text-slate-400' : 'text-slate-600'}`}>
             <span className="text-slate-400 font-semibold">Territory: </span>
             {activeMeta.territory}
           </div>
         </div>
 
         <div className="text-left md:text-right flex-shrink-0">
-          <div className="text-[11px] sm:text-xs font-medium text-slate-600 max-w-sm">
+          <div className={`text-[11px] sm:text-xs font-medium max-w-sm ${isExpanded ? 'text-slate-300' : 'text-slate-600'}`}>
             {activeDetails.clinicalAction}
           </div>
         </div>
