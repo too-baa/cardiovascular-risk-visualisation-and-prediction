@@ -10,7 +10,8 @@ import {
   Sparkles, 
   HelpCircle, 
   X, 
-  Stethoscope
+  Stethoscope,
+  Tag
 } from 'lucide-react';
 
 // Preload the authentic high-definition 3D realistic heart asset
@@ -106,7 +107,7 @@ const VASCULAR_NETWORK = {
 
 // Prominent, High-Visibility Coronary Artery Tube
 // Caliber is bold (0.038) and slightly elevated from the heart surface with glow so it never gets lost
-function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick }) {
+function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabels = true }) {
   const meshRef = useRef();
   const vData = VASCULAR_NETWORK[vesselKey];
   const riskMeta = getRiskDetails(risk);
@@ -114,7 +115,6 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick }) {
   const tubeGeometry = useMemo(() => {
     const points = vData.curvePoints.map(p => new THREE.Vector3(...p));
     const curve = new THREE.CatmullRomCurve3(points);
-    // Bold, clearly visible medical caliber (over 2x thicker than the tiny 0.018 hair-lines)
     return new THREE.TubeGeometry(curve, 54, 0.036, 16, false);
   }, [vData]);
 
@@ -156,32 +156,32 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick }) {
         />
       </mesh>
 
-      {/* Always-Visible 3D Floating Clinical Tag (Fixed, compact size across mobile & desktop) */}
-      <Html position={vData.labelPos} center zIndexRange={[40, 0]}>
-        <button
-          onClick={(e) => { e.stopPropagation(); onClick(vesselKey); }}
-          className={`flex items-center space-x-1.5 px-2 py-0.5 rounded-full border shadow-md cursor-pointer transition-all duration-150 backdrop-blur-md select-none ${
-            isSelected 
-              ? 'ring-2 ring-white scale-105' 
-              : 'hover:scale-105'
-          } ${
-            risk > 0.6 
-              ? 'bg-red-600/95 text-white border-red-300' 
-              : risk > 0.3 
-                ? 'bg-amber-500/95 text-white border-amber-300' 
-                : 'bg-emerald-600/95 text-white border-emerald-300'
-          }`}
-          style={{ whiteSpace: 'nowrap', pointerEvents: 'auto' }}
-        >
-          <span className="font-bold text-[10px] tracking-wide">{vesselKey}</span>
-          <span className="text-[10px] font-mono font-bold opacity-90">
-            {Math.round(risk * 100)}%
-          </span>
-          <span className="text-[9px] uppercase font-semibold px-1 py-0.2 rounded bg-black/25">
-            {risk > 0.6 ? 'Critical' : risk > 0.3 ? 'Moderate' : 'Patent'}
-          </span>
-        </button>
-      </Html>
+      {/* Compact 3D Floating Clinical Tag (Toggleable) */}
+      {showLabels && (
+        <Html position={vData.labelPos} center zIndexRange={[40, 0]}>
+          <button
+            onClick={(e) => { e.stopPropagation(); onClick(vesselKey); }}
+            className={`flex items-center space-x-1 px-2 py-0.5 rounded-full border shadow-md cursor-pointer transition-all duration-150 backdrop-blur-md select-none text-[10px] font-bold ${
+              isSelected 
+                ? 'ring-2 ring-white scale-110' 
+                : 'hover:scale-105'
+            } ${
+              risk > 0.6 
+                ? 'bg-red-600/90 text-white border-red-300' 
+                : risk > 0.3 
+                  ? 'bg-amber-500/90 text-white border-amber-300' 
+                  : 'bg-emerald-600/90 text-white border-emerald-300'
+            }`}
+            style={{ whiteSpace: 'nowrap', pointerEvents: 'auto' }}
+          >
+            <span>{vesselKey}</span>
+            <span className="font-mono opacity-90">{Math.round(risk * 100)}%</span>
+            <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-black/25">
+              {risk > 0.6 ? 'Critical' : risk > 0.3 ? 'Moderate' : 'Patent'}
+            </span>
+          </button>
+        </Html>
+      )}
     </group>
   );
 }
@@ -192,7 +192,8 @@ function RealisticHeartScene({
   isTranslucent, 
   vesselRisks, 
   selectedVessel, 
-  setSelectedVessel 
+  setSelectedVessel,
+  showLabels = true
 }) {
   const groupRef = useRef();
   const { scene } = useGLTF('/models/realistic_heart.glb');
@@ -211,8 +212,9 @@ function RealisticHeartScene({
     s.position.y -= center.y;
     s.position.z -= center.z;
 
+    // Increased from 2.5 to 3.15 so the heart is large and prominent
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 2.5 / (maxDim || 1);
+    const scale = 3.15 / (maxDim || 1);
     s.scale.set(scale, scale, scale);
 
     // Dynamic material adaptation: Solid photorealistic texture vs semi-transparent X-ray
@@ -254,7 +256,7 @@ function RealisticHeartScene({
   });
 
   return (
-    <group ref={groupRef} position={[0, 0.05, 0]}>
+    <group ref={groupRef} position={[0, 0.16, 0]}>
       {/* Realistic Anatomical Heart Mesh (From photorealistic GLTF) */}
       <primitive object={clonedScene} />
 
@@ -266,6 +268,7 @@ function RealisticHeartScene({
           risk={vesselRisks?.[vKey] || 0}
           isSelected={selectedVessel === vKey}
           onClick={setSelectedVessel}
+          showLabels={showLabels}
         />
       ))}
     </group>
@@ -280,15 +283,15 @@ function CameraController({ viewTarget }) {
     if (!viewTarget) return;
 
     if (viewTarget === 'anterior') {
-      camera.position.set(0, 0, 3.4);
+      camera.position.set(0, 0.16, 2.85);
     } else if (viewTarget === 'left') {
-      camera.position.set(-2.8, 0.3, 1.8);
+      camera.position.set(-2.5, 0.35, 1.7);
     } else if (viewTarget === 'right') {
-      camera.position.set(2.8, 0.3, 1.8);
+      camera.position.set(2.5, 0.35, 1.7);
     } else if (viewTarget === 'top') {
-      camera.position.set(0, 3.2, 1.0);
+      camera.position.set(0, 2.9, 0.85);
     }
-    camera.lookAt(0, -0.05, 0);
+    camera.lookAt(0, 0.1, 0);
   }, [viewTarget, camera]);
 
   return null;
@@ -299,6 +302,7 @@ export default function HeartViewer3D({ vesselRisks }) {
   const [autoRotate, setAutoRotate] = useState(false);
   const [enableHeartbeat, setEnableHeartbeat] = useState(true);
   const [isTranslucent, setIsTranslucent] = useState(false); // Default to realistic textured solid
+  const [showLabels, setShowLabels] = useState(true);
   const [selectedVessel, setSelectedVessel] = useState('LAD');
   const [viewPreset, setViewPreset] = useState('anterior');
   const [showClinicalGuide, setShowClinicalGuide] = useState(false);
@@ -380,6 +384,20 @@ export default function HeartViewer3D({ vesselRisks }) {
             <RotateCw className={`w-3.5 h-3.5 text-sky-600 ${autoRotate ? 'animate-spin' : ''}`} />
             <span>Auto-Rotate</span>
           </button>
+
+          {/* 3D Labels Toggle */}
+          <button
+            onClick={() => setShowLabels(l => !l)}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition shadow-xs ${
+              showLabels 
+                ? 'bg-sky-50 text-sky-700 border-sky-200' 
+                : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
+            }`}
+            title="Toggle 3D floating vessel badges on/off"
+          >
+            <Tag className="w-3.5 h-3.5 text-sky-600" />
+            <span>{showLabels ? '3D Tags' : 'No Tags'}</span>
+          </button>
         </div>
       </div>
 
@@ -430,7 +448,7 @@ export default function HeartViewer3D({ vesselRisks }) {
       )}
 
       {/* Camera Angles & Vessel Selectors */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         {/* Camera Angles */}
         <div className="flex items-center space-x-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200/60">
           <span className="text-[11px] font-bold text-slate-500 px-2 flex items-center gap-1">
@@ -499,33 +517,33 @@ export default function HeartViewer3D({ vesselRisks }) {
         </div>
       </div>
 
-      {/* 3D Canvas Viewport */}
-      <div className="w-full h-[540px] lg:h-[620px] bg-gradient-to-b from-slate-50 via-white to-sky-50/20 rounded-2xl overflow-hidden relative border border-slate-200/80 shadow-inner">
+      {/* 3D Canvas Viewport - Clean & Unobstructed */}
+      <div className="w-full h-[520px] lg:h-[580px] bg-gradient-to-b from-slate-50 via-white to-sky-50/20 rounded-2xl overflow-hidden relative border border-slate-200/80 shadow-inner">
         {/* Navigation Tip */}
-        <div className="absolute top-4 left-4 z-10 pointer-events-none flex items-center space-x-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200/80 text-xs font-medium text-slate-600 shadow-xs">
+        <div className="absolute top-3 left-3 z-10 pointer-events-none flex items-center space-x-1.5 bg-white/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200/80 text-[11px] font-medium text-slate-600 shadow-xs">
           <Eye className="w-3.5 h-3.5 text-sky-600" />
-          <span>Click & Drag to Rotate 360° • Scroll to Zoom • Click any vessel to inspect</span>
+          <span>Click & Drag to Rotate • Scroll to Zoom</span>
         </div>
 
-        {/* Risk Legend */}
-        <div className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md p-2.5 rounded-xl border border-slate-200/80 shadow-xs text-[11px] space-y-1.5">
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs"></span>
+        {/* Risk Legend - Compact Single Row Pill */}
+        <div className="absolute top-3 right-3 z-10 bg-white/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-xs text-[11px] flex items-center space-x-3">
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs"></span>
             <span className="text-slate-700 font-medium">Patent (&lt;30%)</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-xs"></span>
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500 shadow-xs"></span>
             <span className="text-slate-700 font-medium">Moderate (30–60%)</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-xs"></span>
-            <span className="text-red-700 font-bold">Critical Stenosis (&gt;60%)</span>
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shadow-xs"></span>
+            <span className="text-red-700 font-bold">Critical (&gt;60%)</span>
           </div>
         </div>
 
         {/* Three.js R3F 3D Scene */}
         <Canvas 
-          camera={{ position: [0, 0, 3.4], fov: 42 }}
+          camera={{ position: [0, 0.16, 2.85], fov: 40 }}
           gl={{ antialias: true, alpha: true }}
         >
           {/* Studio Medical Lighting */}
@@ -550,44 +568,46 @@ export default function HeartViewer3D({ vesselRisks }) {
               vesselRisks={vesselRisks}
               selectedVessel={selectedVessel}
               setSelectedVessel={setSelectedVessel}
+              showLabels={showLabels}
             />
           </Suspense>
 
           {/* Smooth 360° Controls */}
           <OrbitControls
+            target={[0, 0.1, 0]}
             enableZoom={true}
             enablePan={false}
             enableRotate={true}
             autoRotate={autoRotate}
             autoRotateSpeed={1.2}
-            minDistance={2.0}
-            maxDistance={6.0}
+            minDistance={1.8}
+            maxDistance={5.2}
             dampingFactor={0.05}
           />
         </Canvas>
+      </div>
 
-        {/* Selected Vessel HUD Card (Bottom) */}
-        <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4 z-10 bg-white/95 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-slate-200/90 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4">
-          <div className="space-y-0.5 sm:space-y-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm sm:text-base font-black text-slate-900">{activeMeta.name}</span>
-              <span className="text-[10px] sm:text-xs font-mono font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-100">
-                {activeMeta.acronym}
-              </span>
-              <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border ${activeDetails.badgeClass}`}>
-                {activeDetails.band} • {Math.round(activeRisk * 100)}% Risk
-              </span>
-            </div>
-            <div className="text-[11px] sm:text-xs text-slate-600 line-clamp-1 sm:line-clamp-none">
-              <span className="text-slate-400 font-semibold">Territory: </span>
-              {activeMeta.territory}
-            </div>
+      {/* Selected Vessel Clinical Detail Card (Cleanly placed BELOW the Canvas) */}
+      <div className="mt-3.5 bg-gradient-to-r from-slate-50 via-white to-sky-50/30 p-3 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 transition-all">
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm sm:text-base font-black text-slate-900">{activeMeta.name}</span>
+            <span className="text-[10px] sm:text-xs font-mono font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-100">
+              {activeMeta.acronym}
+            </span>
+            <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border ${activeDetails.badgeClass}`}>
+              {activeDetails.band} • {Math.round(activeRisk * 100)}% Risk
+            </span>
           </div>
+          <div className="text-[11px] sm:text-xs text-slate-600">
+            <span className="text-slate-400 font-semibold">Territory: </span>
+            {activeMeta.territory}
+          </div>
+        </div>
 
-          <div className="text-left md:text-right flex-shrink-0">
-            <div className="text-[11px] sm:text-xs font-medium text-slate-600 max-w-sm">
-              {activeDetails.clinicalAction}
-            </div>
+        <div className="text-left md:text-right flex-shrink-0">
+          <div className="text-[11px] sm:text-xs font-medium text-slate-600 max-w-sm">
+            {activeDetails.clinicalAction}
           </div>
         </div>
       </div>
