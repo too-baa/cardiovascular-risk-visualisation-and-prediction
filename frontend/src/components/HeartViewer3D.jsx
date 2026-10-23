@@ -62,15 +62,16 @@ const VASCULAR_NETWORK = {
     acronym: 'LAD',
     territory: 'Anterior LV Free Wall, Interventricular Septum & Cardiac Apex',
     clinicalSignificance: 'Widowmaker Artery: Supplies ~50% of the entire left ventricle myocardium. Primary driver of extensive anterior STEMI.',
-    labelPos: [0.15, 0.20, 0.64],
+    labelPos: [0.12, 0.15, 0.78],
     curvePoints: [
-      [0.10, 0.72, 0.44],
-      [0.14, 0.46, 0.52],
-      [0.16, 0.16, 0.58],
-      [0.12, -0.18, 0.54],
-      [0.08, -0.52, 0.44],
-      [0.04, -0.88, 0.30],
-      [0.00, -1.16, 0.15]
+      [0.08, 0.74, 0.54],
+      [0.12, 0.48, 0.65],
+      [0.14, 0.20, 0.76],
+      [0.10, -0.10, 0.78],
+      [0.06, -0.40, 0.72],
+      [0.02, -0.72, 0.60],
+      [-0.04, -1.02, 0.42],
+      [-0.08, -1.22, 0.26]
     ]
   },
   LCX: {
@@ -78,15 +79,16 @@ const VASCULAR_NETWORK = {
     acronym: 'LCX',
     territory: 'Lateral & Posterior Left Ventricular Free Wall, Left Atrium',
     clinicalSignificance: 'Curves along the left atrioventricular sulcus to supply the posterolateral myocardium via obtuse marginal branches.',
-    labelPos: [-0.75, 0.18, 0.25],
+    labelPos: [-0.85, 0.05, 0.42],
     curvePoints: [
-      [-0.10, 0.68, 0.42],
-      [-0.36, 0.55, 0.40],
-      [-0.64, 0.32, 0.28],
-      [-0.74, 0.06, 0.14],
-      [-0.66, -0.28, -0.10],
-      [-0.46, -0.62, -0.24],
-      [-0.24, -0.92, -0.22]
+      [-0.12, 0.72, 0.48],
+      [-0.38, 0.62, 0.46],
+      [-0.64, 0.44, 0.42],
+      [-0.82, 0.20, 0.38],
+      [-0.88, -0.10, 0.35],
+      [-0.84, -0.42, 0.30],
+      [-0.70, -0.72, 0.25],
+      [-0.48, -0.98, 0.18]
     ]
   },
   RCA: {
@@ -94,15 +96,15 @@ const VASCULAR_NETWORK = {
     acronym: 'RCA',
     territory: 'Right Ventricle, Inferior LV Wall & SA/AV Nodal Conduction System',
     clinicalSignificance: 'Courses down the right coronary sulcus and acute margin to supply the inferior myocardium and conduction nodes.',
-    labelPos: [0.74, 0.18, 0.25],
+    labelPos: [0.82, 0.12, 0.38],
     curvePoints: [
-      [0.28, 0.65, 0.38],
-      [0.55, 0.45, 0.32],
-      [0.72, 0.12, 0.22],
-      [0.68, -0.22, 0.10],
-      [0.58, -0.55, -0.06],
-      [0.38, -0.82, -0.18],
-      [0.18, -1.05, -0.22]
+      [0.26, 0.68, 0.48],
+      [0.55, 0.50, 0.44],
+      [0.78, 0.22, 0.38],
+      [0.86, -0.08, 0.32],
+      [0.82, -0.38, 0.25],
+      [0.68, -0.68, 0.18],
+      [0.46, -0.96, 0.12]
     ]
   }
 };
@@ -116,7 +118,13 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabe
   const tubeGeometry = useMemo(() => {
     const points = vData.curvePoints.map(p => new THREE.Vector3(...p));
     const curve = new THREE.CatmullRomCurve3(points);
-    return new THREE.TubeGeometry(curve, 54, 0.036, 16, false);
+    return new THREE.TubeGeometry(curve, 64, 0.044, 20, false);
+  }, [vData]);
+
+  const sheathGeometry = useMemo(() => {
+    const points = vData.curvePoints.map(p => new THREE.Vector3(...p));
+    const curve = new THREE.CatmullRomCurve3(points);
+    return new THREE.TubeGeometry(curve, 64, 0.058, 20, false);
   }, [vData]);
 
   useFrame(({ clock }) => {
@@ -124,9 +132,9 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabe
       const t = clock.getElapsedTime();
       if (risk > 0.6) {
         const pulse = (Math.sin(t * riskMeta.pulseSpeed) + 1) / 2;
-        meshRef.current.material.emissiveIntensity = 0.6 + pulse * 0.8;
+        meshRef.current.material.emissiveIntensity = 0.7 + pulse * 0.9;
       } else {
-        meshRef.current.material.emissiveIntensity = isSelected ? 1.0 : 0.5;
+        meshRef.current.material.emissiveIntensity = isSelected ? 1.2 : 0.6;
       }
     }
   });
@@ -135,42 +143,48 @@ function CoronaryArteryTube({ vesselKey, risk = 0, isSelected, onClick, showLabe
 
   return (
     <group onClick={(e) => { e.stopPropagation(); onClick(vesselKey); }}>
-      {/* Outer Luminescent Sheath */}
-      <mesh geometry={tubeGeometry} renderOrder={15}>
+      {/* Outer Luminescent Protective Sheath / Arterial Wall Halo */}
+      <mesh geometry={sheathGeometry} renderOrder={30}>
         <meshBasicMaterial
           color={baseColor}
           transparent
-          opacity={isSelected ? 0.4 : 0.22}
+          opacity={isSelected ? 0.35 : 0.18}
           wireframe={false}
+          polygonOffset={true}
+          polygonOffsetFactor={-4}
+          polygonOffsetUnits={-4}
         />
       </mesh>
 
-      {/* Main Solid Arterial Lumen */}
-      <mesh ref={meshRef} geometry={tubeGeometry} renderOrder={25}>
+      {/* Main Solid Arterial Lumen - Rich Organic Gloss */}
+      <mesh ref={meshRef} geometry={tubeGeometry} renderOrder={40}>
         <meshStandardMaterial
           color={baseColor}
           emissive={baseColor}
-          emissiveIntensity={isSelected ? 1.0 : 0.5}
-          roughness={0.2}
-          metalness={0.25}
+          emissiveIntensity={isSelected ? 1.2 : 0.6}
+          roughness={0.15}
+          metalness={0.1}
+          polygonOffset={true}
+          polygonOffsetFactor={-2}
+          polygonOffsetUnits={-2}
         />
       </mesh>
 
       {/* Compact 3D Floating Clinical Tag (Toggleable) */}
       {showLabels && (
-        <Html position={vData.labelPos} center zIndexRange={[40, 0]}>
+        <Html position={vData.labelPos} center zIndexRange={[60, 0]}>
           <button
             onClick={(e) => { e.stopPropagation(); onClick(vesselKey); }}
-            className={`flex items-center space-x-1 px-2 py-0.5 rounded-full border shadow-md cursor-pointer transition-all duration-150 backdrop-blur-md select-none text-[10px] font-bold ${
+            className={`flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full border shadow-lg cursor-pointer transition-all duration-150 backdrop-blur-md select-none text-[11px] font-bold ${
               isSelected 
-                ? 'ring-2 ring-white scale-110' 
+                ? 'ring-2 ring-white scale-110 shadow-sky-500/50' 
                 : 'hover:scale-105'
             } ${
               risk > 0.6 
-                ? 'bg-red-600/90 text-white border-red-300' 
+                ? 'bg-red-600/95 text-white border-red-300' 
                 : risk > 0.3 
-                  ? 'bg-amber-500/90 text-white border-amber-300' 
-                  : 'bg-emerald-600/90 text-white border-emerald-300'
+                  ? 'bg-amber-500/95 text-white border-amber-300' 
+                  : 'bg-emerald-600/95 text-white border-emerald-300'
             }`}
             style={{ whiteSpace: 'nowrap', pointerEvents: 'auto' }}
           >
@@ -230,8 +244,8 @@ function RealisticHeartScene({
         } else {
           child.material.transparent = false;
           child.material.opacity = 1.0;
-          child.material.roughness = 0.45;
-          child.material.metalness = 0.15;
+          child.material.roughness = 0.30;
+          child.material.metalness = 0.05;
           child.material.depthWrite = true;
         }
       }
@@ -591,12 +605,13 @@ export default function HeartViewer3D({ vesselRisks }) {
           camera={{ position: [0, 0.05, 3.1], fov: 44 }}
           gl={{ antialias: true, alpha: true }}
         >
-          {/* Studio Medical Lighting */}
-          <ambientLight intensity={1.5} />
-          <hemisphereLight skyColor="#ffffff" groundColor="#cbd5e1" intensity={1.1} />
-          <directionalLight position={[6, 8, 6]} intensity={1.8} />
-          <directionalLight position={[-6, -4, -4]} intensity={0.9} color="#bae6fd" />
-          <pointLight position={[0, 2, 3]} intensity={1.2} />
+          {/* Studio Medical Cinematic Lighting */}
+          <ambientLight intensity={1.4} />
+          <hemisphereLight skyColor="#ffffff" groundColor="#1e293b" intensity={1.1} />
+          <directionalLight position={[6, 8, 8]} intensity={2.2} color="#ffffff" />
+          <directionalLight position={[-6, 4, 6]} intensity={1.5} color="#f8fafc" />
+          <directionalLight position={[-8, 6, -6]} intensity={1.4} color="#38bdf8" />
+          <pointLight position={[0, 1.5, 3.5]} intensity={1.5} color="#ffffff" />
 
           <Suspense fallback={
             <Html center>
