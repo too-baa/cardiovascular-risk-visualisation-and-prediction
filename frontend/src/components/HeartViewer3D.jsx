@@ -212,9 +212,9 @@ function RealisticHeartScene({
     s.position.y -= center.y;
     s.position.z -= center.z;
 
-    // Increased from 2.5 to 3.15 so the heart is large and prominent
+    // Increased to 4.3 so the heart commands the entire 3D stage prominently
     const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 3.15 / (maxDim || 1);
+    const scale = 4.3 / (maxDim || 1);
     s.scale.set(scale, scale, scale);
 
     // Dynamic material adaptation: Solid photorealistic texture vs semi-transparent X-ray
@@ -283,15 +283,15 @@ function CameraController({ viewTarget }) {
     if (!viewTarget) return;
 
     if (viewTarget === 'anterior') {
-      camera.position.set(0, 0.16, 2.85);
+      camera.position.set(0, 0.1, 2.15);
     } else if (viewTarget === 'left') {
-      camera.position.set(-2.5, 0.35, 1.7);
+      camera.position.set(-1.85, 0.25, 1.3);
     } else if (viewTarget === 'right') {
-      camera.position.set(2.5, 0.35, 1.7);
+      camera.position.set(1.85, 0.25, 1.3);
     } else if (viewTarget === 'top') {
-      camera.position.set(0, 2.9, 0.85);
+      camera.position.set(0, 2.2, 0.6);
     }
-    camera.lookAt(0, 0.1, 0);
+    camera.lookAt(0, 0.05, 0);
   }, [viewTarget, camera]);
 
   return null;
@@ -517,8 +517,8 @@ export default function HeartViewer3D({ vesselRisks }) {
         </div>
       </div>
 
-      {/* 3D Canvas Viewport - Clean & Unobstructed */}
-      <div className="w-full h-[520px] lg:h-[580px] bg-gradient-to-b from-slate-50 via-white to-sky-50/20 rounded-2xl overflow-hidden relative border border-slate-200/80 shadow-inner">
+      {/* 3D Canvas Viewport - Bold, Large & Unobstructed */}
+      <div className="w-full h-[580px] lg:h-[660px] bg-gradient-to-b from-slate-50 via-white to-sky-50/20 rounded-2xl overflow-hidden relative border border-slate-200/80 shadow-inner">
         {/* Navigation Tip */}
         <div className="absolute top-3 left-3 z-10 pointer-events-none flex items-center space-x-1.5 bg-white/85 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200/80 text-[11px] font-medium text-slate-600 shadow-xs">
           <Eye className="w-3.5 h-3.5 text-sky-600" />
@@ -543,7 +543,7 @@ export default function HeartViewer3D({ vesselRisks }) {
 
         {/* Three.js R3F 3D Scene */}
         <Canvas 
-          camera={{ position: [0, 0.16, 2.85], fov: 40 }}
+          camera={{ position: [0, 0.1, 2.15], fov: 42 }}
           gl={{ antialias: true, alpha: true }}
         >
           {/* Studio Medical Lighting */}
@@ -574,14 +574,14 @@ export default function HeartViewer3D({ vesselRisks }) {
 
           {/* Smooth 360° Controls */}
           <OrbitControls
-            target={[0, 0.1, 0]}
+            target={[0, 0.05, 0]}
             enableZoom={true}
             enablePan={false}
             enableRotate={true}
             autoRotate={autoRotate}
             autoRotateSpeed={1.2}
-            minDistance={1.8}
-            maxDistance={5.2}
+            minDistance={1.2}
+            maxDistance={4.2}
             dampingFactor={0.05}
           />
         </Canvas>
